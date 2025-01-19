@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Astrology Report & Chatbot</title>
+    <title>Astrology Planet Report</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -30,7 +31,7 @@
             font-weight: bold;
             display: block;
         }
-        input, button {
+        input[type="text"], input[type="number"] {
             width: 100%;
             padding: 8px;
             margin: 5px 0;
@@ -40,150 +41,90 @@
         button {
             background-color: #007bff;
             color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
             cursor: pointer;
+            display: block;
+            width: 100%;
         }
         button:hover {
             background-color: #0056b3;
         }
-        #chat-container {
-            width: 80%;
-            max-width: 600px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        .result {
+            margin-top: 20px;
+        }
+        .result h3 {
+            margin-top: 10px;
+        }
+        .result p {
+            font-size: 1.1em;
+            line-height: 1.5;
+        }
+        .gem-info {
+            margin-top: 30px;
             padding: 20px;
-            margin-top: 50px;
-        }
-        .message {
-            margin: 10px 0;
-        }
-        .user-message {
-            text-align: right;
-        }
-        .bot-message {
-            text-align: left;
-        }
-        #message-input {
-            width: 100%;
-            padding: 10px;
-            margin-top: 10px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
             border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        #send-btn {
-            margin-top: 10px;
-            padding: 10px 20px;
-            border: none;
-            background: #007BFF;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        #send-btn:hover {
-            background: #0056b3;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Astrology Planet Report & Gem Suggestions</h1>
-        <form id="astroForm" method="POST">
+
+        <form method="POST">
             <div class="form-group">
-                <label>Your Name:</label>
-                <input type="text" name="name" required>
+                <label for="name">Your Name:</label>
+                <input type="text" id="name" name="name" required>
             </div>
             <div class="form-group">
-                <label>State:</label>
-                <input type="text" id="state" name="state" required>
+                <label for="dob">Date of Birth (DD/MM/YYYY):</label>
+                <input type="text" id="dob" name="dob" required>
             </div>
             <div class="form-group">
-                <label>City:</label>
-                <input type="text" id="city" name="city" required>
-            </div>
-            <input type="hidden" id="lat" name="lat">
-            <input type="hidden" id="lon" name="lon">
-            <div class="form-group">
-                <label>Time of Birth:</label>
-                <input type="text" name="tob" required>
+                <label for="tob">Time of Birth (HH:MM):</label>
+                <input type="text" id="tob" name="tob" required>
             </div>
             <div class="form-group">
-                <label>Time Zone:</label>
-                <input type="text" name="tz" required>
+                <label for="lat">Latitude:</label>
+                <input type="number" id="lat" name="lat" required>
             </div>
             <div class="form-group">
-                <label>Planet (e.g., Jupiter, Mars):</label>
-                <input type="text" name="planet" required>
+                <label for="lon">Longitude:</label>
+                <input type="number" id="lon" name="lon" required>
             </div>
-            <button type="button" onclick="fetchLocation()">Get Report</button>
+            <div class="form-group">
+                <label for="tz">Time Zone:</label>
+                <input type="number" id="tz" name="tz" required>
+            </div>
+            <div class="form-group">
+                <label for="planet">Planet (e.g., Jupiter, Mars):</label>
+                <input type="text" id="planet" name="planet" required>
+            </div>
+            <button type="submit">Get Report</button>
         </form>
+
+        {% if planet_report %}
+        <div class="result">
+            <h2>Planet Report for {{ planet_report['planet_considered'] }}</h2>
+            <p><strong>Planet Location:</strong> {{ planet_report['planet_location'] }}</p>
+            <p><strong>Planet's Zodiac:</strong> {{ planet_report['planet_zodiac'] }}</p>
+            <p><strong>Zodiac Lord:</strong> {{ planet_report['zodiac_lord'] }}</p>
+            <p><strong>Planet Strength:</strong> {{ planet_report['planet_strength'] }}</p>
+            <p><strong>General Prediction:</strong> {{ planet_report['general_prediction'] }}</p>
+            <p><strong>Planet Definition:</strong> {{ planet_report['planet_definitions'] }}</p>
+        </div>
+        {% endif %}
+
+        {% if gem_report %}
+        <div class="gem-info">
+            <h3>Gem Suggestion</h3>
+            <p><strong>Gem Name:</strong> {{ gem_report['name'] }}</p>
+            <p><strong>Description:</strong> {{ gem_report['description'] }}</p>
+        </div>
+        {% endif %}
     </div>
-
-    <div id="chat-container">
-        <div id="chat-box"></div>
-        <input type="text" id="name-input" placeholder="Enter your name" />
-        <input type="text" id="message-input" placeholder="Type your message here" />
-        <button id="send-btn">Send</button>
-    </div>
-
-    <script>
-        function fetchLocation() {
-            let city = document.getElementById("city").value;
-            let state = document.getElementById("state").value;
-
-            if (!city || !state) {
-                alert("Please enter both city and state.");
-                return;
-            }
-
-            fetch("/get_location", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ city: city, state: state })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.lat && data.lon) {
-                    document.getElementById("lat").value = data.lat;
-                    document.getElementById("lon").value = data.lon;
-                    document.getElementById("astroForm").submit();
-                } else {
-                    alert("Location not found. Please check your input.");
-                }
-            })
-            .catch(error => console.error("Error fetching location:", error));
-        }
-
-        document.getElementById('send-btn').addEventListener('click', async () => {
-            const name = document.getElementById('name-input').value.trim();
-            const message = document.getElementById('message-input').value.trim();
-
-            if (!name || !message) {
-                alert("Please enter your name and message.");
-                return;
-            }
-
-            const chatBox = document.getElementById('chat-box');
-            chatBox.innerHTML += `<div class="message user-message"><strong>${name}:</strong> ${message}</div>`;
-
-            try {
-                const response = await fetch('/api/message', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ name, message }),
-                });
-
-                const data = await response.json();
-                if (data.response) {
-                    chatBox.innerHTML += `<div class="message bot-message"><strong>Bot:</strong> ${data.response}</div>`;
-                } else {
-                    chatBox.innerHTML += `<div class="message bot-message"><strong>Bot:</strong> ${data.error || "An error occurred."}</div>`;
-                }
-            } catch (error) {
-                chatBox.innerHTML += `<div class="message bot-message"><strong>Bot:</strong> Unable to connect to the server.</div>`;
-            }
-        });
-    </script>
 </body>
 </html>
